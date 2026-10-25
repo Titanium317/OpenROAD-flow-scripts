@@ -168,7 +168,15 @@ export KLAYOUT_DRC_FILE ?= $(PLATFORM_DIR)/drc/sg13g2_minimal.lydrc
 export CDL_FILE ?= $(PLATFORM_DIR)/cdl/sg13g2_stdcell.cdl
 #export KLAYOUT_LVS_FILE = $(PLATFORM_DIR)/lvs/$(PLATFORM).lylvs
 
-export REMOVE_CELLS_FOR_LEC ?= "bondpad_70* sg13g2*"
+# Local Net2GDS fix (2026-10-20): the former value was
+#   "bondpad_70* sg13g2*"
+# which removed every standard cell from the LEC netlist. For
+# SYNTH_USE_SYN designs that netlist is written as 1_synth.v and is the only
+# netlist handed to STA/reporting, so STA reported "No paths found" for
+# ihp-sg13g2/gcd and ihp-sg13g2/aes. Only bondpads need removing here;
+# physical-only fill/decap/antenna cells are already filtered by
+# find_physical_only_masters in scripts/util.tcl.
+export REMOVE_CELLS_FOR_LEC ?= "bondpad_70*"
 
 # ---------------------------------------------------------
 #  Final

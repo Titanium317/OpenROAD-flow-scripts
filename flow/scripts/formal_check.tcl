@@ -54,6 +54,17 @@ proc write_lec_script { step file1 file2 } {
   } else {
     set lib_list $::env(LIB_FILES)
   }
+  # AUTO_MEMORIES generates macro .lib views under $RESULTS_DIR/memories during
+  # synthesis.  scripts/read_liberty.tcl picks them up there, but they are not
+  # part of LIB_FILES, so kepler-formal cannot resolve the memory macros and
+  # aborts with "<macro> cannot be found in SNL".  Append them the same way.
+  if { [env_var_equals AUTO_MEMORIES 1] } {
+    foreach mem_lib [glob -nocomplain $::env(RESULTS_DIR)/memories/*.lib] {
+      if { [lsearch -exact $lib_list $mem_lib] < 0 } {
+        lappend lib_list $mem_lib
+      }
+    }
+  }
   set outfile [open "$::env(OBJECTS_DIR)/${step}_lec_test.yml" w]
   puts $outfile "format: verilog"
   puts $outfile "input_paths:"
@@ -75,8 +86,17 @@ proc write_sec_script { step file1 file2 } {
   puts $outfile "input_paths:"
   puts $outfile "  - $::env(RESULTS_DIR)/${file1}"
   puts $outfile "  - $::env(RESULTS_DIR)/${file2}"
+  set sec_libs $::env(LIB_FILES)
+  # same AUTO_MEMORIES gap as write_lec_script
+  if { [env_var_equals AUTO_MEMORIES 1] } {
+    foreach mem_lib [glob -nocomplain $::env(RESULTS_DIR)/memories/*.lib] {
+      if { [lsearch -exact $sec_libs $mem_lib] < 0 } {
+        lappend sec_libs $mem_lib
+      }
+    }
+  }
   puts $outfile "liberty_files:"
-  foreach libFile $::env(LIB_FILES) {
+  foreach libFile $sec_libs {
     puts $outfile " - $libFile"
   }
   puts $outfile "log_file: $::env(LOG_DIR)/${step}_sec_check.log"
