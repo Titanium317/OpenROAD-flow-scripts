@@ -163,7 +163,26 @@ proc global_route_helper { } {
     [env_var_exists_and_non_empty MAX_REPAIR_ANTENNAS_ITER_GRT]
   } {
     puts "Repair antennas..."
-    repair_antennas -iterations $::env(MAX_REPAIR_ANTENNAS_ITER_GRT) \
+    if { [env_var_exists_and_non_empty ANTENNA_CLOCK_NETS] } {
+      # Restrict the incremental antenna reroute to the audited clock nets.
+      set_nets_to_route [split $::env(ANTENNA_CLOCK_NETS) {,}]
+      log_cmd global_route -start_incremental {*}$allow_congestion
+      log_cmd global_route -end_incremental {*}$allow_congestion
+    }
+    if { [env_var_exists_and_non_empty ANTENNA_TARGET_NETS] } {
+      # Batch mode: reroute only the audited net window before invoking the
+      # router's antenna repair.  repair_antennas itself has no net filter in
+      # this OpenROAD build, so this narrows the incremental route while the
+      # subsequent check remains the signoff authority.
+      set_nets_to_route [split $::env(ANTENNA_TARGET_NETS) {,}]
+      log_cmd global_route -start_incremental {*}$allow_congestion
+      log_cmd global_route -end_incremental {*}$allow_congestion
+    }
+    set antenna_mode {}
+    if { [env_var_exists_and_non_empty ANTENNA_REPAIR_JUMPER_ONLY] && $::env(ANTENNA_REPAIR_JUMPER_ONLY) } {
+      set antenna_mode {-jumper_only}
+    }
+    repair_antennas ANTENNA_X1 -iterations $::env(MAX_REPAIR_ANTENNAS_ITER_GRT) {*}$antenna_mode \
       {*}$allow_congestion
     # repair antennas calls DPL internally
     check_placement -verbose

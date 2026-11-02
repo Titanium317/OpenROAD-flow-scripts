@@ -54,13 +54,20 @@ if { !$::env(SKIP_DETAILED_ROUTE) } {
     [env_var_exists_and_non_empty MAX_REPAIR_ANTENNAS_ITER_DRT]
   } {
     set repair_antennas_iters 1
-    if { [repair_antennas] } {
+    if { [env_var_exists_and_non_empty ANTENNA_TARGET_NETS] } {
+      set_nets_to_route [split $::env(ANTENNA_TARGET_NETS) {,}]
+    }
+    set antenna_mode {}
+    if { [env_var_exists_and_non_empty ANTENNA_REPAIR_JUMPER_ONLY] && $::env(ANTENNA_REPAIR_JUMPER_ONLY) } {
+      set antenna_mode {-jumper_only}
+    }
+    if { [repair_antennas ANTENNA_X1 {*}$antenna_mode] } {
       detailed_route {*}$all_args
     }
     while {
       [check_antennas] && $repair_antennas_iters < $::env(MAX_REPAIR_ANTENNAS_ITER_DRT)
     } {
-      repair_antennas
+      repair_antennas ANTENNA_X1 {*}$antenna_mode
       detailed_route {*}$all_args
       incr repair_antennas_iters
     }
